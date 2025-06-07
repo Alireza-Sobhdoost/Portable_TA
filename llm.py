@@ -1,17 +1,20 @@
 from cerebras.cloud.sdk import Cerebras
-from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
 import pickle
 import json
+from Embed_sys import EmbedSys
+import numpy as np
+import os
+import faiss
 
 class LLM :
-    def __init__(self):
+    def __init__(self, vector_db_path="./vector_db"):
 
-        with open("./teaching/books.pkl", "rb") as f:
-            knowledge_chunks = pickle.load(f)  # Should contain {"documents": [...], "embeddings": [...]}
+        self.index = faiss.read_index(os.path.join(vector_db_path, "index.faiss"))
+        with open(os.path.join(vector_db_path, "documents.pkl"), "rb") as f:
+            self.KB = pickle.load(f)
 
 
-        self.__API_key = "your api key here"  # Replace with your actual API key
+        self.__API_key = "your_api_key"  # Replace with your actual API key
         self.client = Cerebras(
         # This is the default and can be omitted
         api_key= self.__API_key
@@ -19,32 +22,16 @@ class LLM :
 
         self.models = ["qwen-3-32b", "llama-4-scout-17b-16e-instruct"]
 
-        self.KB = knowledge_chunks
-
-        self.embed_model = SentenceTransformer(
-        "nomic-ai/nomic-embed-text-v1",
-        trust_remote_code=True
-        )
+        self.embed_model = EmbedSys()
 
 
 
-
-    def get_rag_content(self, query=None, top_k= 10) :
-
-
-        query_embedding = self.embed_model.encode(query, convert_to_tensor=True, batch_size=8)
-
-        scored_chunks = []
-        for chunk_text, chunk_embedding in zip(self.KB["documents"], self.KB["embeddings"]):
-            score = cosine_similarity([query_embedding.tolist()], [chunk_embedding])[0][0]
-            scored_chunks.append((chunk_text, score))
-
-        scored_chunks.sort(key=lambda x: x[1], reverse=True)
-
-        rag_context = "\n\n".join(text for text, _ in scored_chunks[:top_k])
-
-
-        return rag_context
+    def get_rag_context(self, query, top_k=10):
+        query_embedding = self.embed_model(query)
+        query_embedding = np.array([query_embedding])
+        _, top_indices = self.index.search(query_embedding, top_k)
+        top_chunks = [self.KB[i].page_content for i in top_indices[0]]
+        return "\n\n".join(top_chunks)
 
     def clean_contex(self, messages):
         if not messages:
@@ -81,10 +68,10 @@ class LLM :
 
         brief_message = self.clean_contex(messages)
 
-        summery = summery + brief_message if len(summery) < 1024 else brief_message
+        summery = summery + brief_message if len(summery) < 1024 else summery[-256:] + brief_message
         print(summery)
         
-        rag_data = self.get_rag_content(f"{query, summery}")
+        rag_data = self.get_rag_context(f"{query, summery}")
         print("Data retrieved from the knowledge base.")
 
         # Prepare messages for the model
@@ -168,4 +155,44 @@ class LLM :
             # data = json.loads(completion_create_response.choices[0].message.content[0])
             # answer = data.get("پاسخ", "")
         return answer, messages, summery
+
+
+    def clean_voice_data (self, messages) :
+        if not messages:
+            return ''
+
+        transcription_correction_prompt = [
+            {
+                "role": "system",
+                "content": """تو یک ویرایشگر حرفه‌ای زبان فارسی هستی.
+                وظیفه‌ی تو این است که متنی که از صدا به متن تبدیل شده (و ممکن است دارای غلط‌های املایی، نگارشی یا گرامری باشد) را به صورت صحیح، خوانا و طبیعی بازنویسی کنی.
+                در بازنویسی باید:
+                - ساختار دستوری را درست کنی.
+                - غلط‌های املایی را اصلاح کنی.
+                - لحن و معنای اصلی جمله را تغییر ندهی.
+                - اگر متن گفتاری است، می‌توانی آن را کمی رسمی‌تر ولی طبیعی بنویسی.
+
+                فقط متن اصلاح‌شده را برگردان. هیچ توضیح یا علامت اضافی ننویس.
+                """
+            },
+
+            {"role": "user", "content": f"""
+               متن جدید :
+            {messages}
+
+        """}
+        ]
+
+
+        response = self.client.chat.completions.create(
+            messages=transcription_correction_prompt,
+            model=self.models[0],
+            stream=False,
+            max_completion_tokens=len(messages),
+            temperature=0,
+            top_p=1
+        )
+
+        brief_message = response.choices[0].message.content.strip()
+        return brief_message
 

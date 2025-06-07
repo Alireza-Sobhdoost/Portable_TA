@@ -1,41 +1,68 @@
-from sentence_transformers import SentenceTransformer
-from langchain_community.document_loaders import PyPDFLoader, TextLoader
-import numpy as np
 import os
 import pickle
+import numpy as np
+import faiss
 
-embed = SentenceTransformer(
-    "nomic-ai/nomic-embed-text-v1",
-    trust_remote_code=True
-)
+from langchain_community.document_loaders import PyPDFLoader, TextLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.schema import Document
+from sentence_transformers import SentenceTransformer
+from tqdm import tqdm
 
-def load_documents(folder_path: str):
-    texts = []
-    for file in os.listdir(folder_path):
-        path = os.path.join(folder_path, file)
-        if file.endswith(".txt"):
+def build_vector_db(folder_path, embedding_model_name, output_dir):
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Load model
+    embed_model = SentenceTransformer(embedding_model_name, trust_remote_code=True)
+
+    # Load and chunk documents
+    splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=100)
+    all_chunks = []
+
+    for filename in os.listdir(folder_path):
+        path = os.path.join(folder_path, filename)
+        if filename.endswith(".txt"):
             docs = TextLoader(path).load()
-            # TextLoader returns list of Document objects; extract text
-            texts.extend([doc.page_content for doc in docs])
-        elif file.endswith(".pdf"):
-            loader = PyPDFLoader(path)
-            docs = loader.load()
-            # Extract text from each page/document object
-            texts.extend([doc.page_content for doc in docs])
-    return texts
+        elif filename.endswith(".pdf"):
+            docs = PyPDFLoader(path).load()
+        else:
+            continue
 
-folder_path = "./teaching/books"  # Your folder with PDFs and/or txt files
-documents = load_documents(folder_path)
+        for doc in docs:
+            doc.metadata["source"] = filename
 
-print(f"Loaded {len(documents)} text chunks from documents")
+        chunks = splitter.split_documents(docs)
+        all_chunks.extend(chunks)
 
-# Now embed documents, which is a list of strings
-doc_embeddings = np.array(embed.encode(documents, normalize_embeddings=True, batch_size=8))
-if doc_embeddings.ndim == 3:
-    doc_embeddings = doc_embeddings.squeeze(1)
-# Save both documents and embeddings
-with open("./teaching/teaching.pkl", "wb") as f:
-    pickle.dump({
-        "documents": documents,
-        "embeddings": doc_embeddings
-    }, f)
+    print(f"✅ Loaded and split into {len(all_chunks)} chunks.")
+
+    # Get texts for embedding
+    texts = [doc.page_content for doc in all_chunks]
+
+    # Embed
+    print("🔍 Embedding...")
+    embeddings = embed_model.encode(texts, batch_size=32, normalize_embeddings=True, show_progress_bar=True)
+    embeddings = np.array(embeddings)
+
+    # Normalize for cosine similarity
+    faiss.normalize_L2(embeddings)
+
+    # Create FAISS index
+    dim = embeddings.shape[1]
+    index = faiss.IndexFlatIP(dim)
+    index.add(embeddings)
+
+    # Save index and data
+    faiss.write_index(index, os.path.join(output_dir, "index.faiss"))
+
+    with open(os.path.join(output_dir, "documents.pkl"), "wb") as f:
+        pickle.dump(all_chunks, f)
+
+    print("✅ Saved FAISS index and documents.")
+
+# Usage
+build_vector_db(
+    folder_path="./teaching/books",
+    embedding_model_name="nomic-ai/nomic-embed-text-v1",
+    output_dir="./teaching/vector_db"
+)

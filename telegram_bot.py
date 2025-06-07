@@ -2,12 +2,50 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 import re
 from llm import LLM
+from voice_trans import VoiceModel
 from User import User
 from telegramify_markdown import markdownify
+from functools import wraps
 
 
-TOKEN = "your telegram bot token here"
+
+TOKEN = "your_api_key"
 LLM_Agent = LLM()
+Voice_Agent = VoiceModel()
+
+
+
+from functools import wraps
+import tempfile
+import os
+
+def Voice_mode(transcriber):
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
+            text = None
+            if update.message.voice:
+                chat_id = update.effective_chat.id
+                voice_file = await update.message.voice.get_file()
+
+                # Download to a temporary file
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".ogg") as tmp_file:
+                    await voice_file.download_to_drive(tmp_file.name)
+                    tmp_file_path = tmp_file.name
+
+                try:
+                    # Transcribe the audio file
+                    transcribed_text = transcriber(tmp_file_path)
+                    # text = LLM_Agent.clean_voice_data(transcribed_text)
+                    text = transcribed_text
+                except Exception as e:
+                    pass 
+                finally:
+                    os.remove(tmp_file_path)  # Clean up
+
+            return await func(update, context, text)
+        return wrapper
+    return decorator
 
 
 def replace_double_dolor(text):
@@ -29,8 +67,10 @@ def clean_text(text):
     return text
 
 
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_text = update.message.text
+@Voice_mode(transcriber=Voice_Agent)
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE, text = None):
+    user_text = text if text is not None else update.message.text
+    print(text)
     chat_id = update.effective_chat.id
 
     try:
@@ -57,8 +97,7 @@ def main():
     application = ApplicationBuilder().token(TOKEN).build()
 
     application.add_handler(CommandHandler("start", start))
-    application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_message))
-
+    application.add_handler(MessageHandler((filters.TEXT | filters.VOICE) & ~filters.COMMAND, handle_message))
     application.run_polling()
 
 if __name__ == "__main__":
