@@ -2,6 +2,9 @@ import nomic
 import numpy as np
 import os
 from nomic import embed
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class EmbedSys() :
 

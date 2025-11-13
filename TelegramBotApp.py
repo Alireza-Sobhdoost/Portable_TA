@@ -5,6 +5,9 @@ from MainLLMApp import MainLLMApp as LLM
 from Models.User import User
 from telegramify_markdown import markdownify
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -40,14 +43,16 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE, tex
     except KeyError:
         current_user = User(chat_id)
         current_user.session_number += 1
-        current_user.history[f"S{u.session_number}"] = {}
+        current_user.history[f"S{current_user.session_number}"] = {}
+        current_user.prev_conv_summery = ""
 
-    llm_response, current_user.messages, current_user.summery = LLM_Agent(
+    llm_response = LLM_Agent(
         current_user, user_text
     )
 
     llm_response = clean_text(llm_response)
     reply_text = markdownify(llm_response)
+    print(current_user)
     await update.message.reply_text(reply_text, parse_mode='MarkdownV2')
 
 
@@ -60,11 +65,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     u.session_number += 1
     u.history[f"S{u.session_number}"] = {}
+    u.prev_conv_summery = ""
+
+    print(u)
 
     await update.message.reply_text("سلام! سوال خود را بفرستید و جواب محاسباتی دقیق را دریافت کنید.")
 
 def main():
     application = ApplicationBuilder().token(TOKEN).build()
+    print("Bot is running...")
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler((filters.TEXT) & ~filters.COMMAND, handle_message))

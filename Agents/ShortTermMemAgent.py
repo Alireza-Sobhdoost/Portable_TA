@@ -7,7 +7,7 @@ class ShortTermMemAgent :
         1. user_history – a Python dictionary containing previous user interactions (can be null), structured like:
         {
             t_n: {
-                "subject": "<One of: Basic_Programming, Advanced_Programming, DataStructures_And_Algorithms, Computer_Architecture, Computer_Aided_Design, Artificial_Intelligence, Signal&Systems, DiscreteMath, DigitalLogicDesign>",
+                "subject": "<One of: Basic_Programming, Advanced_Programming, DataStructures_And_Algorithms, Computer_Architecture, Computer_Aided_Design, Artificial_Intelligence, Signal&Systems, DiscreteMath, DigitalLogicDesign, Formal_Languages_And_Automata_Theory>",
                 "chapter": "<Reasoned title based on user input and RAG context>",
                 "description": "<Summary of what the user asks for in this section, based on RAG data and the subject>"
             }
@@ -33,7 +33,7 @@ class ShortTermMemAgent :
             "user_summary": "<Brief description of user's input and problem>",
             "agent_summary": "<Explanation of agent's approach, answer, or solution>"
         }
-        Do not return any explanations or extra text.
+        Do not return any explanations or extra text. Just the Json object.
         """
     Agent = LLM(system_prompt, model="qwen-3-235b-a22b-instruct-2507")
 
@@ -55,4 +55,4 @@ class ShortTermMemAgent :
         Generate a concise summary of the recent interaction to update the short-term memory.
         """
 
-        user_obj.prev_conv_summery[f"S{user_obj.session_number}"] = cls.Agent(query)
+        user_obj.prev_conv_summery = cls.Agent(query)

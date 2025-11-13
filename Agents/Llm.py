@@ -1,5 +1,8 @@
 from cerebras.cloud.sdk import Cerebras
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 
@@ -8,14 +11,13 @@ MODELS = ["qwen-3-32b", "gpt-oss-120b", "qwen-3-235b-a22b-instruct-2507"]
 class LLM :
     def __init__(self, system_prompt, model="qwen-3-32b") :
 
-
-        self.__API_key = os.getenv("CEREBRAS_API_KEY")
         self.client = Cerebras(
         # This is the default and can be omitted
-        api_key= self.__API_key
+        api_key= os.getenv("CEREBRAS_API_KEY")
         )
 
         self.system_prompt = system_prompt
+        self.model = model
 
 
 
@@ -34,7 +36,6 @@ class LLM :
                 max_completion_tokens=1024,
                 temperature=0.2,
                 top_p=1,
-                response_format={"type": "json_object"},
                 reasoning_effort=reasoning_effort
             )
 

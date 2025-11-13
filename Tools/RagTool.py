@@ -5,7 +5,7 @@ import os
 import pickle
 
 class RagTool :
-    def __init__(self, vector_db_path="./VectorDB"):
+    def __init__(self, vector_db_path="./VectorDb"):
 
         self.index = faiss.read_index(os.path.join(vector_db_path, "index.faiss"))
         with open(os.path.join(vector_db_path, "documents.pkl"), "rb") as f:

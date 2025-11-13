@@ -7,7 +7,7 @@ class SessionUpdateAgent :
         1. user_history – a Python dictionary containing previous user interactions (that can be null), structured like:
         {
             t_n: {
-                "subject": "<One of: Basic_Programming, Advanced_Programming, DataStructures_And_Algorithms, Computer_Architecture, Computer_Aided_Design, Artificial_Intelligence, Signal&Systems, DiscreteMath, DigitalLogicDesign>",
+                "subject": "<One of: Basic_Programming, Advanced_Programming, DataStructures_And_Algorithms, Computer_Architecture, Computer_Aided_Design, Artificial_Intelligence, Signal&Systems, DiscreteMath, DigitalLogicDesign, Formal_Languages_And_Automata_Theory>",
                 "chapter": "<Reasoned title based on user input and RAG context>",
                 "description": "<Summary of what the user asks for in this section, based on RAG data and the subject>"
             }
@@ -17,7 +17,7 @@ class SessionUpdateAgent :
         3. rag_data – relevant RAG (retrieval-augmented generation) context for the prompt.
 
         Your task is to update the user_history dictionary with the new interaction.
-        Output only the updated Python dictionary. Do not return any explanations or extra text.
+        Output only the updated Python dictionary. Do not return any explanations or extra text. Just the Json object.
         """
 
     Agent = LLM(system_prompt, model="qwen-3-235b-a22b-instruct-2507")

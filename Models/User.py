@@ -8,3 +8,11 @@ class User :
         self.prev_conv_summery = ""
         self.session_number = 0
         User.DB[self.id] = self
+
+    def __repr__(self):
+        return f"""
+        id: {self.id}\n
+        history: {self.history}
+        prev_conv_summery: {self.prev_conv_summery}\n
+        session_number: {self.session_number}
+        """
