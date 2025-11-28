@@ -7,7 +7,7 @@ class SessionUpdateAgent :
         1. user_history – a Python dictionary containing previous user interactions (that can be null), structured like:
         {
             t_n: {
-                "subject": "<One of: Basic_Programming, Advanced_Programming, DataStructures_And_Algorithms, Computer_Architecture, Computer_Aided_Design, Artificial_Intelligence, Signal&Systems, DiscreteMath, DigitalLogicDesign, Formal_Languages_And_Automata_Theory>",
+                "subject": "<One of: "Basic_Programming", "Advanced_Programming", "DataStructures_And_Algorithms", "Computer_Architecture", "Computer_Aided_Design", "Artificial_Intelligence", "Signal&Systems", "DiscreteMath", "Statistics", "Ordinary Partial Equations", "Operating Systems", "Data Bases", "Software Design and Analyze", "Digital Logic circuits", "Formal_Languages_And_Automata_Theory">",
                 "chapter": "<Reasoned title based on user input and RAG context>",
                 "description": "<Summary of what the user asks for in this section, based on RAG data and the subject>"
             }
@@ -37,4 +37,4 @@ class SessionUpdateAgent :
         Update the user_history dictionary with this new interaction.
         """
 
-        user_obl.history[f"S{user_obl.session_number}"] = cls.Agent(query)
+        user_obl.history[f"S{user_obl.session_number}"], _ = cls.Agent(query)

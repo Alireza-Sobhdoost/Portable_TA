@@ -9,7 +9,7 @@ class PreProcessAgent :
         1. user_history – a Python dictionary of the student's previous interactions (can be empty), structured like:
         {
             t_n: {
-                "subject": "<One of: Basic_Programming, Advanced_Programming, DataStructures_And_Algorithms, Computer_Architecture, Computer_Aided_Design, Artificial_Intelligence, Signal&Systems, DiscreteMath>",
+                "subject": "<One of: "Basic_Programming", "Advanced_Programming", "DataStructures_And_Algorithms", "Computer_Architecture", "Computer_Aided_Design", "Artificial_Intelligence", "Signal&Systems", "DiscreteMath", "Statistics", "Ordinary Partial Equations", "Operating Systems", "Data Bases", "Software Design and Analyze", "Digital Logic circuits", "Formal_Languages_And_Automata_Theory">",
                 "chapter": "<Title of the lesson based on prior queries and context>",
                 "description": "<Brief summary of what the student asked about or learned>"
             }
@@ -43,4 +43,5 @@ class PreProcessAgent :
         Modify or rewrite the student's query only if necessary to make it clear or meaningful. Return only the modified query as plain text.
         """
 
-        return cls.Agent(query, reasoning_effort="medium")
+        res, _ = cls.Agent(query, reasoning_effort="medium")
+        return res

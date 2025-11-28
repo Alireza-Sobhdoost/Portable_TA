@@ -58,7 +58,7 @@ def replace_double_backslashes(text):
     return text.replace('\\\\', '\\')
 
 def remove_zwnj(text):
-    return text.replace('\u200c', '')
+    return text.replace('\u200c', ' ')
 
 def clean_text(text):
     text = replace_double_dolor(text)

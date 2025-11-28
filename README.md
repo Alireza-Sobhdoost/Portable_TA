@@ -68,6 +68,7 @@ To connect your Portable_TA server to the OpenWebUI frontend, follow these steps
 -   **RAG-Powered Answers**: Retrieve context-rich responses from documents and textbooks.
 -   **Dual Memory System**: Long-term user memory + short-term session memory for coherent reasoning.
 -   **OpenAI-Compatible API**: Works with any client or frontend that supports OpenAI API specifications.
+-   **Code Execution Tool**: The Agent can call for a python coder which implement and run the python code for the agent
 -   **Modular & Extensible**: Easily integrate with other tools, widgets, or custom pipelines.
 -   **Widget Support**: Compatible with OpenWebUI chat widgets for immediate deployment.
 
