@@ -14,9 +14,19 @@ class RagTool :
         self.embed_model = EmbedSys()
 
 
-    def get_rag_context(self, query, top_k=5):
-        query_embedding = self.embed_model(query)
-        query_embedding = np.array([query_embedding])
-        _, top_indices = self.index.search(query_embedding, top_k)
-        top_chunks = [self.KB[i].page_content for i in top_indices[0]]
-        return "\n\n".join(top_chunks)
+    def get_rag_context(self, queries, top_k=5, threshold=0.5):
+        answer = {}
+        for query in queries:
+            query_embedding = np.array([self.embed_model(query)])
+
+            # Search in FAISS
+            similarities, top_indices = self.index.search(query_embedding, top_k)
+
+            chunks = []
+            for sim, idx in zip(similarities[0], top_indices[0]):
+                if sim >= threshold:      # <--- APPLY THRESHOLD HERE
+                    chunks.append(self.KB[idx].page_content)
+
+            answer[query] = "\n\n".join(chunks) if chunks else ""
+
+        return answer

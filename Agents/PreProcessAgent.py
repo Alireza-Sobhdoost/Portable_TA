@@ -1,8 +1,9 @@
 from Agents.Llm import LLM
+import json
 
 class PreProcessAgent :
     system_prompt = """
-        You are a Computer Engineering Lesson Assistant. Your goal is to help students get the most relevant lesson content using their queries and optional history. 
+        You are a Computer Engineering Lesson Assistant. Your goal is to help students get the most relevant lesson content using their queries and optional history.
 
         Your inputs are:
 
@@ -19,15 +20,36 @@ class PreProcessAgent :
 
         Your task:
 
-        - Modify or rewrite the student's query **only if necessary** to make it clear or meaningful.
-        - The **user's current query has the highest priority**. Only use `user_history` when the query alone is ambiguous or incomplete.
-        - Return **only the modified query as plain text**, without any JSON or extra formatting.
+        - Modify or rewrite the student's query **only if necessary** to make it clear and meaningful.
+        - The student’s current query has the **highest priority**.
+        - Use `user_history` **only** when the user’s prompt is ambiguous or incomplete.
 
-        Constraints:
-        - Keep the rewritten query as close as possible to the user's original intent.
-        - Do not add unrelated information from history unless it is needed to clarify the query.
-        - Ensure the output is ready for direct use in a RAG search system.
+        Your output MUST be a valid JSON object with this exact format:
+
+        {
+            "processed query": "<A refined version of the user's query>",
+            "RAG queries": [
+                "<A short search-friendly query for RAG #1>",
+                "<A short search-friendly query for RAG #2>",
+                "<A short search-friendly query for RAG #3>"
+            ]
+        }
+
+        Rules for "processed query":
+        - Keep it as close as possible to the user's original intent.
+        - Do NOT add unrelated info from history unless required for clarity.
+        - Return a single clean rewritten version ready for RAG search.
+
+        Rules for "RAG queries":
+        - Provide at least **3 short search phrases**.
+        - Each phrase must be something that can be directly searched in a RAG system.
+        - Keep them simple, concise, and semantically aligned with the user's intent.
+
+        Output constraints:
+        - Return **ONLY** the JSON. No explanations. No extra text.
+        - JSON must be strictly valid and parseable.
     """
+
 
     Agent = LLM(system_prompt, model="gpt-oss-120b")
 
@@ -43,5 +65,18 @@ class PreProcessAgent :
         Modify or rewrite the student's query only if necessary to make it clear or meaningful. Return only the modified query as plain text.
         """
 
-        res, _ = cls.Agent(query, reasoning_effort="medium")
-        return res
+        raw_res, _ = cls.Agent(query, reasoning_effort="medium")
+
+        # ---- JSON Parsing ----
+        try:
+            data = json.loads(raw_res)
+        except json.JSONDecodeError:
+            # fallback: try to extract JSON inside text
+            import re
+            match = re.search(r"\{.*\}", raw_res, re.DOTALL)
+            if match:
+                data = json.loads(match.group(0))
+            else:
+                raise ValueError(f"Model did not return a valid JSON: {raw_res}")
+            
+        return data.get("processed query", ""), data.get("RAG queries", [])

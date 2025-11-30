@@ -122,5 +122,5 @@ uvicorn MainLLMApp:app --host 0.0.0.0 --port 9000
 ## Contributing
 Contributions are welcome! Fork the repository, create a branch, and submit a pull request.
 
-##License
+## License
 This project is licensed under the MIT License.

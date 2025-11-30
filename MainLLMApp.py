@@ -16,11 +16,15 @@ class MainLLMApp :
     def __call__(self, user_obj, current_user_prompt) :
         # Step 1: Pre-process the user query
         print(f"REQ FROM [{user_obj.id}] in MainLLMApp: Pre-processing the user query...")
-        pre_processed_query = PreProcessAgent.PRE_PROCESS_QUERY(user_obj, current_user_prompt)
+        pre_processed_query, rag_queries = PreProcessAgent.PRE_PROCESS_QUERY(user_obj, current_user_prompt)
+
+        print(rag_queries)
 
         # Step 2: Retrieve RAG context
         print(f"REQ FROM [{user_obj.id}] in MainLLMApp: Retrieving RAG context...")
-        rag_context = self.rag_tool.get_rag_context(pre_processed_query)
+        rag_context = self.rag_tool.get_rag_context(rag_queries)
+
+        print(rag_context)
 
 
         # Step 4: Generate answer using TaAgent
