@@ -27,9 +27,7 @@ class CodeAgent:
         - If the prompt is unclear, choose the simplest reasonable implementation.
 
         Safety rules:
-        - No filesystem access unless explicitly allowed.
-        - No network calls unless explicitly allowed.
-        - No OS-level commands unless explicitly allowed.
+        - No Harmfull code allowed.
         - Avoid infinite loops or dangerously long computations.
 
         Always respond with ONLY the final code.

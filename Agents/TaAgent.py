@@ -158,6 +158,7 @@ class TaAgent:
             Inline math: \(a . b\)
 
             Block math: \[a . b\]
+        14. When you call a tool, always pass its result through to the final response.
 
         Goal: Provide an educational, understandable response without tables or separators.
     """
@@ -226,7 +227,7 @@ class TaAgent:
             ]
 
             message, _ = cls.Agent(
-                query="با توجه به خروجی ابزار، پاسخ کامل و نهایی را ارائه دهید.",
+                query="با توجه به خروجی (های ) ابزار، پاسخ کامل و نهایی را همراه با خروجی های ابزار ارائه دهید.",
                 Messages=messages,
                 reasoning_effort="low",
                 max_token=2048
